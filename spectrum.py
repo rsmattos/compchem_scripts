@@ -71,7 +71,6 @@ def raw_data(xaxis,yaxis):
         d.write("# index       Wavelenght  Absorption_Coeff\n")
         for i in range(len(xaxis)):
             d.write("{0:>7} {1:>16} {2:>16}\n".format(i+1,xaxis[i],yaxis[i]))
-#            d.write("{0} {1} {2}\n".format(i+1,xaxis[i],yaxis[i]))
         d.close()
 
 def gnu_plot(xaxis,yaxis):
@@ -98,6 +97,7 @@ def mpl_plot(xaxis,yaxis):
     plt.xlabel("Energy (nm)")
     plt.ylabel("$\epsilon$ (L mol$^{-1}$ cm$^{-1}$)")
     if args.sticks:
+        stick_intensities=[abs_max(os_strengths[i],energies[i],energies[i]) for i in range(len(energies))]
         for i in range(len(energies)):
             plt.plot((energies[i],energies[i]),(0,stick_intensities[i]),colours[n])
     if args.r:
@@ -112,9 +112,9 @@ def mpl_plot(xaxis,yaxis):
 if __name__=='__main__':
     for n,f in enumerate(args.input):
         infile=open(f,"r")
-        if(args.prog=="orca"):
+        if args.prog=="orca":
             energies,os_strengths=read_orca(infile)
-        elif(args.prog=="gaussian"):
+        elif args.prog=="gaussian":
             energies,os_strengths=read_g09(infile)
         else:
         	print("Program not supported.")
@@ -132,8 +132,6 @@ if __name__=='__main__':
             for i in range(len(energies)):
                 tot+=abs_max(os_strengths[i],energies[i],ref)
             sum.append(tot)
-
-        stick_intensities=[abs_max(os_strengths[i],energies[i],energies[i]) for i in range(len(energies))]
 
         if args.raw:
             raw_data(x,sum)
