@@ -68,8 +68,10 @@ def abs_max(f,lam,ref):
 
 def raw_data(xaxis,yaxis):
     with open(args.raw+".dat","w") as d:
+        d.write("# index       Wavelenght  Absorption_Coeff\n")
         for i in range(len(xaxis)):
-            d.write("{0} {1} {2}\n".format(i+1,xaxis[i],yaxis[i]))
+            d.write("{0:>7} {1:>16} {2:>16}\n".format(i+1,xaxis[i],yaxis[i]))
+#            d.write("{0} {1} {2}\n".format(i+1,xaxis[i],yaxis[i]))
         d.close()
 
 def gnu_plot(xaxis,yaxis):
