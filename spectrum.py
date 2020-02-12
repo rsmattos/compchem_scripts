@@ -33,7 +33,7 @@ parser.add_argument("-mpl",help="Plot a spectrum using matplotlib",action="store
 parser.add_argument("-sticks",help="Plot the stick spectrum",action="store_true")
 parser.add_argument("-sd",help="Standard deviation (in eV)",default=0.4,type=float)
 parser.add_argument("-r",help="Min and max values for the spectrum (in nm)",nargs=2,type=int)
-parser.add_argument("-save",help="Save spectrum", type=str)
+parser.add_argument("-save",help="Save spectrum with matplotlib", type=str)
 parser.add_argument("-raw",help="Save raw data as text file",default="data",type=str)
 args=parser.parse_args()
 
@@ -91,10 +91,22 @@ def gnu_plot(xaxis,yaxis):
     return
 
 def mpl_plot(xaxis,yaxis):
-    plt.scatter(xaxis,yaxis,s=2,c="r")
-    plt.plot(xaxis,yaxis,color="k")
+    import matplotlib.pyplot as plt
+    colours=["red","blue","green","orange","black","cyan","magenta"]
+    plt.scatter(x,sum,s=2,c=colours[n])
+    plt.plot(x,sum,color=colours[n],label=f[:-4])
     plt.xlabel("Energy (nm)")
     plt.ylabel("$\epsilon$ (L mol$^{-1}$ cm$^{-1}$)")
+    if args.sticks:
+        for i in range(len(energies)):
+            plt.plot((energies[i],energies[i]),(0,stick_intensities[i]),colours[n])
+    if args.r:
+        plt.xlim(min(args.r),max(args.r))
+    plt.legend()
+    if args.save:
+        plt.savefig(args.save+".pdf")
+    if args.mpl:
+        plt.show()
     return
 
 if __name__=='__main__':
@@ -129,22 +141,5 @@ if __name__=='__main__':
         if args.gnu:
             gnu_plot(x,sum)
 
-        else:
-            import matplotlib.pyplot as plt
-            colours=["red","blue","green","orange","black","cyan","magenta"]
-            plt.scatter(x,sum,s=2,c=colours[n])
-            plt.plot(x,sum,color=colours[n],label=f[:-4])
-            plt.xlabel("Energy (nm)")
-            plt.ylabel("$\epsilon$ (L mol$^{-1}$ cm$^{-1}$)")
-            if args.sticks:
-                for i in range(len(energies)):
-                    plt.plot((energies[i],energies[i]),(0,stick_intensities[i]),colours[n])
-
-
-
-    if args.r:
-        plt.xlim(min(args.r),max(args.r))
-    plt.legend()
-    if args.save:
-        plt.savefig(args.save+".pdf")
-    plt.show()
+        if args.mpl or args.save:
+            mpl_plot(x,sum)
