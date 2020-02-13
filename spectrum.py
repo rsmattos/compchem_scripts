@@ -28,7 +28,7 @@ A number of options can be used to control the output:
 parser = argparse.ArgumentParser()
 parser.add_argument("input",help="Log file of Gaussian 09 TD job", type=str, nargs='*')
 parser.add_argument("-gnu",help="Plot a spectrum using gnuplot",action="store_true")
-parser.add_argument("-prog",help="Specify the quantum chem program used",default="orca",type=str)
+parser.add_argument("-prog",help="Specify the quantum chem program used",type=str)
 parser.add_argument("-mpl",help="Plot a spectrum using matplotlib",action="store_true")
 parser.add_argument("-sticks",help="Plot the stick spectrum",action="store_true")
 parser.add_argument("-sd",help="Standard deviation (in eV)",default=0.4,type=float)
@@ -37,20 +37,29 @@ parser.add_argument("-save",help="Save spectrum with matplotlib", type=str)
 parser.add_argument("-raw",help="Save raw data as text file",default="data",type=str)
 args=parser.parse_args()
 
-def read_g09(file):
+def find_program(line):
+    for i in range(5):
+        if "Gaussian" in line[i]:
+            args.prog="gaussian"
+            return
+        if "* O   R   C   A *" in line[i]:
+            args.prog="orca"
+            return
+    print("Could not identify the program, try specifying with -prog.")
+    quit()
+
+def read_g09(line):
     energies=[]
     os_strengths=[]
-    line=file.readlines()
     for i in range(len(line)):
         if " Excited State " in line[i]:
             energies.append(float(line[i].split()[6]))
             os_strengths.append(float(line[i].split()[8][2:]))
     return energies,os_strengths
 
-def read_orca(file):
+def read_orca(line):
     energies=[]
     os_strengths=[]
-    line=file.readlines()
     for i in range(len(line)):
         if " nroots " in line[i]:
             nroots=int(line[i].split()[3])
@@ -103,6 +112,7 @@ def mpl_plot(xaxis,yaxis):
     if args.rng:
         plt.xlim(min(args.rng),max(args.rng))
     plt.legend()
+
     if args.save:
         plt.savefig(args.save+".pdf")
     if args.mpl:
@@ -112,12 +122,21 @@ def mpl_plot(xaxis,yaxis):
 if __name__=='__main__':
     for n,f in enumerate(args.input):
         infile=open(f,"r")
+        line=infile.readlines()
+
+        # find out the program that generated the output
+        if not args.prog:
+            find_program(line)
+
+        # read the energies and oscilator strenghts from output file
         if args.prog=="orca":
-            energies,os_strengths=read_orca(infile)
+            energies,os_strengths=read_orca(line)
         elif args.prog=="gaussian":
-            energies,os_strengths=read_g09(infile)
+            energies,os_strengths=read_g09(line)
         else:
-        	print("Program not supported.")
+            print("Program not supported.")
+            quit()
+
         infile.close()
 
         if args.rng:
