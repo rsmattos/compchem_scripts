@@ -69,17 +69,21 @@ def read_orca(line):
                 os_strengths.append(float(line[j].split()[3]))
     return energies,os_strengths
 
-def abs_max(f,lam,ref):
-    a=1.3062974e8
-    b=f/(1e7/3099.6)
-    c=np.exp(-(((1/ref-1/lam)/(1/(1240/args.sd)))**2))
-    return a*b*c
+#def abs_max(f,lam,ref):
+#    a=1.3062974e8
+#    b=f/(1e7/3099.6)
+#    c=np.exp(-(((1/ref-1/lam)/(1/(1240/args.sd)))**2))
+#    return a*b*c
+
+def abs_max(f,lamb_max,lamb):
+    # 1240 passes ards.sd from eV to nm-1
+    return f*np.exp(-((1/lamb-1/lamb_max)*1240/args.sd)**2)
 
 def raw_data(xaxis,yaxis):
     with open(args.raw+".dat","w") as d:
-        d.write("# index       Wavelenght  Absorption_Coeff\n")
+        d.write("# index       Wavelenght  Oscilator_strenght\n")
         for i in range(len(xaxis)):
-            d.write("{0:>7} {1:>16} {2:>16}\n".format(i+1,xaxis[i],yaxis[i]))
+            d.write("{0:>7} {1:>16}   {2:>16}\n".format(i+1,xaxis[i],yaxis[i]))
         d.close()
 
 def gnu_plot(xaxis,yaxis):
@@ -88,14 +92,21 @@ def gnu_plot(xaxis,yaxis):
             d.write("{0} {1} {2}\n".format(i+1,xaxis[i],yaxis[i]))
         d.close()
 
+    if args.sticks:
+        with open("excit","w") as e:
+            for i in range(len(energies)):
+                e.write("{0} {1} {2}\n".format(i+1,energies[i],os_strengths[i]))
+            e.close()
+
     with open("plot","w") as p:
-        p.write("set xlabel \"Energy (nm)\"\nset ylabel \"Absorption Coeff.(E)\"\n")
+        p.write("set xlabel \"Energy (nm)\"\nset ylabel \"Oscilator strenght\"\n")
         p.write("plot 'data' using 2:3 title '' with lines lt 1 lw 2,\\\n")
+        if args.sticks:
+            p.write("     'excit' using 2:3 title '' with impulse lt 2 lw 2,\\\n")
         p.close()
 
     system("gnuplot -persist plot")
     system("rm -f plot data")
-
     return
 
 def mpl_plot(xaxis,yaxis):
@@ -104,11 +115,10 @@ def mpl_plot(xaxis,yaxis):
     plt.scatter(x,sum,s=2,c=colours[n])
     plt.plot(x,sum,color=colours[n],label=f[:-4])
     plt.xlabel("Energy (nm)")
-    plt.ylabel("$\epsilon$ (L mol$^{-1}$ cm$^{-1}$)")
+    plt.ylabel("Oscilator strenght")
     if args.sticks:
-        stick_intensities=[abs_max(os_strengths[i],energies[i],energies[i]) for i in range(len(energies))]
         for i in range(len(energies)):
-            plt.plot((energies[i],energies[i]),(0,stick_intensities[i]),colours[n])
+            plt.vlines(energies[i],0,os_strengths[i],color='g')
     if args.rng:
         plt.xlim(min(args.rng),max(args.rng))
     plt.legend()
@@ -139,19 +149,22 @@ if __name__=='__main__':
 
         infile.close()
 
+        # set x axis
         if args.rng:
             x=np.linspace(max(args.rng),min(args.rng),1000)
 
         else:
             x=np.linspace(max(energies)+200,min(energies)-200,1000)
 
+        # calculate y axis
         sum=[]
-        for ref in x:
+        for lamb in x:
             tot=0
             for i in range(len(energies)):
-                tot+=abs_max(os_strengths[i],energies[i],ref)
+                tot+=abs_max(os_strengths[i],energies[i],lamb)
             sum.append(tot)
 
+        # output formatss
         if args.raw:
             raw_data(x,sum)
 
