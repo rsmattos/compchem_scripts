@@ -29,7 +29,22 @@ def out_dat():
             d.write("{0:>6} {1:>16} {2:>16}\n".format(i+1,energies_nm[i],os_strengths[i]))
         d.close()
 
-#def out_tex_table:
+def out_tex_table():
+    with open(args.tex+".tex","w") as l:
+        l.write("\\begin{table}\n")
+        l.write("\\centering\n")
+        l.write("\\caption{CAPTION}\n")
+        l.write("\\label{tab:LABEL}\n")
+        l.write("\\begin{tabular}{c c c c c}\n")
+        l.write("\\hline\n")
+        l.write("State &  $\\tilde{\\nu}/cm^{-1}$ & $\\lambda/nm$ & eV & fosc \\\\\n")
+        l.write("\\hline\n")
+        for i in range(len(energies_nm)):
+            l.write("{0:>4} & {1:>6.1f} & {2:>4.1f} & {3:>.4f} & {4:>10} \\\\\n".format(i+1,energies_cm[i],energies_nm[i],1240/energies_nm[i],os_strengths[i]))
+        l.write("\\hline\n")
+        l.write("\\end{tabular}\n")
+        l.write("\\end{table}\n")
+        l.close()
 
 if __name__=='__main__':
     for n,f in enumerate(args.input):
@@ -44,5 +59,5 @@ if __name__=='__main__':
         if args.dat:
             out_dat()
 
-#        if args.tex:
-#            out_tex_table()
+        if args.tex:
+            out_tex_table()
