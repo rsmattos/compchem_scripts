@@ -32,7 +32,7 @@ parser.add_argument("-prog",help="Specify the quantum chem program used",default
 parser.add_argument("-mpl",help="Plot a spectrum using matplotlib",action="store_true")
 parser.add_argument("-sticks",help="Plot the stick spectrum",action="store_true")
 parser.add_argument("-sd",help="Standard deviation (in eV)",default=0.4,type=float)
-parser.add_argument("-r",help="Min and max values for the spectrum (in nm)",nargs=2,type=int)
+parser.add_argument("-rng",help="Min and max values for the spectrum (in nm)",nargs=2,type=int)
 parser.add_argument("-save",help="Save spectrum with matplotlib", type=str)
 parser.add_argument("-raw",help="Save raw data as text file",default="data",type=str)
 args=parser.parse_args()
@@ -100,8 +100,8 @@ def mpl_plot(xaxis,yaxis):
         stick_intensities=[abs_max(os_strengths[i],energies[i],energies[i]) for i in range(len(energies))]
         for i in range(len(energies)):
             plt.plot((energies[i],energies[i]),(0,stick_intensities[i]),colours[n])
-    if args.r:
-        plt.xlim(min(args.r),max(args.r))
+    if args.rng:
+        plt.xlim(min(args.rng),max(args.rng))
     plt.legend()
     if args.save:
         plt.savefig(args.save+".pdf")
@@ -120,8 +120,8 @@ if __name__=='__main__':
         	print("Program not supported.")
         infile.close()
 
-        if args.r:
-            x=np.linspace(max(args.r),min(args.r),1000)
+        if args.rng:
+            x=np.linspace(max(args.rng),min(args.rng),1000)
 
         else:
             x=np.linspace(max(energies)+200,min(energies)-200,1000)
