@@ -107,6 +107,8 @@ def gnu_plot(xaxis,yaxis):
 
     system("gnuplot -persist plot")
     system("rm -f plot data")
+    if args.sticks:
+        system("rm -f excit")
     return
 
 def mpl_plot(xaxis,yaxis):
