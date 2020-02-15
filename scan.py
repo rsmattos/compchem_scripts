@@ -4,6 +4,13 @@ import numpy as np
 from collections import defaultdict
 import argparse
 
+# TODO
+# include arguments for reading bond distance, angle and dihedral variation, inputing atom index
+# include reading options, automatic iterates through folder, read a file with paths, read path input with default value, read a single output
+# include option to print output as dat
+# include simple gnuplot option
+# improve matplotlib plotting
+
 parser = argparse.ArgumentParser()
 parser.add_argument("input",help="File with a list of outputs to be read", type=str, nargs='*')
 args=parser.parse_args()
