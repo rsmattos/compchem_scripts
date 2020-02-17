@@ -15,7 +15,8 @@ import argparse
 parser = argparse.ArgumentParser(description="Script to extrat the energies from a scan calculation.")
 parser.add_argument('input',help="File with a list of outputs to be read", type=str, nargs='*')
 variation = parser.add_mutually_exclusive_group(required=True)
-variation.add_argument('-d','--dihedral',help="Atom index to calculate the dihedral angle, being that the first atom is bonded to the second and so on. Starting to count with the first atom in the coordinates list being 1.", type=int, nargs=4)
+variation.add_argument('-b','--bond_distance',help="Atom index to calculate the bond distanced. Starting to count with the first atom in the coordinates list being 1.", type=int, nargs=2)
+variation.add_argument('-d','--dihedral',help="Atom index to calculate the dihedral angle,being that the first atom is bonded to the second and so on. Starting to count with the first atom in the coordinates list being 1.", type=int, nargs=4)
 args=parser.parse_args()
 
 # functino to calculate the dihedral angle from cartesian coordinates, taken from
@@ -64,7 +65,14 @@ def read_energies(outputs):
         line=file.readlines()
         for j in range(len(line)):
             if "CARTESIAN COORDINATES (ANGSTROEM)" in line[j]:
-                if args.dihedral:
+                if args.bond_distance:
+                    for k in args.bond_distance:
+                        p.append(np.array([float(line[j+1+k].split()[1]),
+                                           float(line[j+1+k].split()[2]),
+                                           float(line[j+1+k].split()[3])]))
+                    variable=float(np.linalg.norm(p[0]-p[1]))
+
+                elif args.dihedral:
                     for k in args.dihedral:
                         p.append(np.array([float(line[j+1+k].split()[1]),
                                            float(line[j+1+k].split()[2]),
