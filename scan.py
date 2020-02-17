@@ -8,11 +8,14 @@ import argparse
 # include arguments for reading bond distance, angle and dihedral variation, inputing atom index
 # include reading options, automatic iterates through folder, read a file with paths, read path input with default value, read a single output
 # include option to print output as dat
+# include general input for different variations of coordinates
 # include simple gnuplot option
 # improve matplotlib plotting
 
-parser = argparse.ArgumentParser()
-parser.add_argument("input",help="File with a list of outputs to be read", type=str, nargs='*')
+parser = argparse.ArgumentParser(description="Script to extrat the energies from a scan calculation.")
+parser.add_argument('input',help="File with a list of outputs to be read", type=str, nargs='*')
+variation = parser.add_mutually_exclusive_group(required=True)
+variation.add_argument('-d','--dihedral',help="Atom index to calculate the dihedral angle, being that the first atom is bonded to the second and so on. Starting to count with the first atom in the coordinates list being 1.", type=int, nargs=4)
 args=parser.parse_args()
 
 # functino to calculate the dihedral angle from cartesian coordinates, taken from
@@ -61,17 +64,17 @@ def read_energies(outputs):
         line=file.readlines()
         for j in range(len(line)):
             if "CARTESIAN COORDINATES (ANGSTROEM)" in line[j]:
-                # 4 8 10 19
-                for k in [5, 9, 11, 20]:
-                    p.append(np.array([float(line[j+1+k].split()[1]),
-                                       float(line[j+1+k].split()[2]),
-                                       float(line[j+1+k].split()[3])]))
-                angle=int(dihedral(p))
+                if args.dihedral:
+                    for k in args.dihedral:
+                        p.append(np.array([float(line[j+1+k].split()[1]),
+                                           float(line[j+1+k].split()[2]),
+                                           float(line[j+1+k].split()[3])]))
+                    variable=int(dihedral(p))
 
             elif "Total Energy " in line[j]:
-                energy[0][angle] = float(line[j].split()[5])
+                energy[0][variable] = float(line[j].split()[5])
             elif "STATE " in line[j]:
-                energy[int(line[j].split()[1].split(':')[0])][angle] = float(line[j].split()[5])
+                energy[int(line[j].split()[1].split(':')[0])][variable] = float(line[j].split()[5])
 
         file.close()
     return energy
@@ -91,6 +94,7 @@ def calc_energies_dic(state):
 
 if __name__=='__main__':
     for n,f in enumerate(args.input):
+
         outs=open(f,"r")
         outputs=read_output_files(outs)
         outs.close()
