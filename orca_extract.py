@@ -3,9 +3,10 @@
 import argparse
 
 parser = argparse.ArgumentParser()
-parser.add_argument("input",help="Log file of Gaussian 09 TD job", type=str, nargs='*')
-parser.add_argument("-dat",help="Save data as text file",default="data",type=str)
-parser.add_argument("-tex",help="Save data as latex formated table",default="latex_table",type=str)
+parser.add_argument("input",help="Name of the Orca output file to be read.", type=str, nargs='*')
+parser.add_argument("-dat",help="Save data as text file.",default="data",type=str)
+parser.add_argument("-tex",help="Save data as latex formated table.",default="data",type=str)
+parser.add_argument("-csv",help="Save data as comma separated value.",default="data",type=str)
 args=parser.parse_args()
 
 def read_abs_spectra(line):
@@ -46,6 +47,12 @@ def out_tex_table():
         l.write("\\end{table}\n")
         l.close()
 
+def out_csv():
+    with open(args.csv+".csv","w") as c:
+        for i in range(len(energies_nm)):
+            c.write("{0:>4},{1:>6.1f},{2:>4.1f},{3:>.4f},{4:>.5f}\n:q".format(i+1,energies_cm[i],energies_nm[i],1239.84193/energies_nm[i],os_strengths[i]))
+        c.close()
+
 if __name__=='__main__':
     for n,f in enumerate(args.input):
         infile=open(f,"r")
@@ -61,3 +68,6 @@ if __name__=='__main__':
 
         if args.tex:
             out_tex_table()
+
+        if args.csv:
+            out_csv()
