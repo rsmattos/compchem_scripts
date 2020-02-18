@@ -5,19 +5,34 @@ from collections import defaultdict
 import argparse
 
 # TODO
-# include arguments for reading bond distance, angle and dihedral variation, inputing atom index
 # include reading options, automatic iterates through folder, read a file with paths, read path input with default value, read a single output
 # include option to print output as dat
 # include general input for different variations of coordinates
 # include simple gnuplot option
 # improve matplotlib plotting
 
-parser = argparse.ArgumentParser(description="Script to extrat the energies from a scan calculation.")
+parser = argparse.ArgumentParser(description='''\
+Script to extrat the energies from a scan calculation. \n \
+When passing the atom index, the first atom given is connected to the second, which is connected to the third, and so on. \n \
+Starting to count with the first atom in the coordinates list being 1.''')
 parser.add_argument('input',help="File with a list of outputs to be read", type=str, nargs='*')
 variation = parser.add_mutually_exclusive_group(required=True)
-variation.add_argument('-b','--bond_distance',help="Atom index to calculate the bond distanced. Starting to count with the first atom in the coordinates list being 1.", type=int, nargs=2)
-variation.add_argument('-d','--dihedral',help="Atom index to calculate the dihedral angle,being that the first atom is bonded to the second and so on. Starting to count with the first atom in the coordinates list being 1.", type=int, nargs=4)
+variation.add_argument('-b','--bond_distance',help="Atom index to calculate the bond distanced.", type=int, nargs=2)
+variation.add_argument('-a','--angle',help="Atom index to calculate the angle.", type=int, nargs=3)
+variation.add_argument('-d','--dihedral',help="Atom index to calculate the dihedral angle.", type=int, nargs=4)
 args=parser.parse_args()
+
+def distance(p)
+    return np.linalg.norm(p[0]-p[1])
+
+def angle(p):
+    x = p[0] - p[1]
+    y = p[2] - p[1]
+
+    xu = x/np.linalg.norm(x)
+    yu = y/np.linalg.norm(y)
+
+    return np.degrees(np.arccos(np.dot(xu, yu)))
 
 # functino to calculate the dihedral angle from cartesian coordinates, taken from
 # https://stackoverflow.com/questions/20305272/dihedral-torsion-angle-from-four-points-in-cartesian-coordinates-in-python
@@ -70,14 +85,21 @@ def read_energies(outputs):
                         p.append(np.array([float(line[j+1+k].split()[1]),
                                            float(line[j+1+k].split()[2]),
                                            float(line[j+1+k].split()[3])]))
-                    variable=float(np.linalg.norm(p[0]-p[1]))
+                    variable=float(distance(p))
+
+                elif args.angle:
+                    for k in args.angle:
+                        p.append(np.array([float(line[j+1+k].split()[1]),
+                                           float(line[j+1+k].split()[2]),
+                                           float(line[j+1+k].split()[3])]))
+                    variable=float(angle(p))
 
                 elif args.dihedral:
                     for k in args.dihedral:
                         p.append(np.array([float(line[j+1+k].split()[1]),
                                            float(line[j+1+k].split()[2]),
                                            float(line[j+1+k].split()[3])]))
-                    variable=int(dihedral(p))
+                    variable=float(dihedral(p))
 
             elif "Total Energy " in line[j]:
                 energy[0][variable] = float(line[j].split()[5])
