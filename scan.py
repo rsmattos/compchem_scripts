@@ -22,7 +22,7 @@ variation.add_argument('-a','--angle',help="Atom index to calculate the angle.",
 variation.add_argument('-d','--dihedral',help="Atom index to calculate the dihedral angle.", type=int, nargs=4)
 args=parser.parse_args()
 
-def distance(p)
+def distance(p):
     return np.linalg.norm(p[0]-p[1])
 
 def angle(p):
