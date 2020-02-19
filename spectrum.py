@@ -34,7 +34,8 @@ parser.add_argument("-sticks",help="Plot the stick spectrum",action="store_true"
 parser.add_argument("-sd",help="Standard deviation (in eV)",default=0.4,type=float)
 parser.add_argument("-rng",help="Min and max values for the spectrum (in nm)",nargs=2,type=int)
 parser.add_argument("-save",help="Save spectrum with matplotlib", type=str)
-parser.add_argument("-raw",help="Save raw data as text file",default="data",type=str)
+parser.add_argument("-raw",help="Save raw data as a text file",default="data",type=str)
+parser.add_argument("-csv",help="Save raw data as a csv file",default="data",type=str)
 args=parser.parse_args()
 
 def find_program(line):
@@ -85,6 +86,13 @@ def raw_data(xaxis,yaxis):
         for i in range(len(xaxis)):
             d.write("{0:>7} {1:>16}   {2:>16}\n".format(i+1,xaxis[i],yaxis[i]))
         d.close()
+
+def out_csv(xaxis,yaxis):
+    with open(args.raw+".dat","w") as d:
+        for i in range(len(xaxis)):
+            d.write("{0:>7},{1:>16},{2:>16}\n".format(i+1,xaxis[i],yaxis[i]))
+        d.close()
+
 
 def gnu_plot(xaxis,yaxis):
     with open("data","w") as d:
