@@ -3,9 +3,10 @@
 import numpy as np
 from collections import defaultdict
 import argparse
+import os
+import fnmatch
 
 # TODO
-# include reading options, automatic iterates through folder, read a file with paths, read path input with default value, read a single output
 # include option to print output as dat
 # include general input for different variations of coordinates
 # include simple gnuplot option
@@ -15,7 +16,8 @@ parser = argparse.ArgumentParser(description='''\
 Script to extrat the energies from a scan calculation. \n \
 When passing the atom index, the first atom given is connected to the second, which is connected to the third, and so on. \n \
 Starting to count with the first atom in the coordinates list being 1.''')
-parser.add_argument('input',help="File with a list of outputs to be read", type=str, nargs='*')
+parser.add_argument('input',help="Output files or directories containing them.", type=str, nargs='*',default='.')
+parser.add_argument('-p','--path_file',help="File with a list of outputs to be read.", type=str, nargs=1)
 variation = parser.add_mutually_exclusive_group(required=True)
 variation.add_argument('-b','--bond_distance',help="Atom index to calculate the bond distanced.", type=int, nargs=2)
 variation.add_argument('-a','--angle',help="Atom index to calculate the angle.", type=int, nargs=3)
@@ -65,11 +67,26 @@ def dihedral(p):
     y = np.dot(np.cross(b1, v), w)
     return np.degrees(np.arctan2(y, x))
 
-def read_output_files(outs):
+def read_path_file():
     file_list=[]
+    outs=open(args.path_file[0],"r")
     line=outs.readlines()
     for i in range(len(line)):
         file_list.append(line[i].rstrip())
+    outs.close()
+    return file_list
+
+def read_output_files():
+    file_list=[]
+    for inp in args.input:
+        if os.path.isfile(inp):
+            file_list.append(inp)
+
+        elif os.path.isdir(inp):
+            for path,dir,file in os.walk(inp):
+                for file_name in file:
+                    if fnmatch.fnmatch(file_name, '*.out'):
+                        file_list.append(path+'/'+file_name)
     return file_list
 
 def read_energies(outputs):
@@ -123,18 +140,21 @@ def calc_energies_dic(state):
     return state
 
 if __name__=='__main__':
-    for n,f in enumerate(args.input):
+    if args.path_file:
+        outputs=read_path_file()
+    else:            
+        outputs=read_output_files()
 
-        outs=open(f,"r")
-        outputs=read_output_files(outs)
-        outs.close()
+    if len(outputs)==0:
+        print("No output files found.")
+        quit()
 
-        state=read_energies(outputs)
+    state=read_energies(outputs)
 
-        state=calc_energies_dic(state)
+    state=calc_energies_dic(state)
 
-        import matplotlib.pyplot as plt
+    import matplotlib.pyplot as plt
 
-        for i in state:
-            plt.plot(*zip(*sorted(state[i].items())))
-        plt.show()
+    for i in state:
+        plt.plot(*zip(*sorted(state[i].items())))
+    plt.show()
