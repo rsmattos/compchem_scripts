@@ -18,6 +18,7 @@ When passing the atom index, the first atom given is connected to the second, wh
 Starting to count with the first atom in the coordinates list being 1.''')
 parser.add_argument('input',help="Output files or directories containing them.", type=str, nargs='*',default='.')
 parser.add_argument('-p','--path_file',help="File with a list of outputs to be read.", type=str, nargs=1)
+parser.add_argument('-e','--extension',help="Determine the type of extension to look for", type=str, nargs=1,default='.out')
 variation = parser.add_mutually_exclusive_group(required=True)
 variation.add_argument('-b','--bond_distance',help="Atom index to calculate the bond distanced.", type=int, nargs=2)
 variation.add_argument('-a','--angle',help="Atom index to calculate the angle.", type=int, nargs=3)
@@ -78,6 +79,7 @@ def read_path_file():
 
 def read_output_files():
     file_list=[]
+    print("The output files being used are:")
     for inp in args.input:
         if os.path.isfile(inp):
             file_list.append(inp)
@@ -85,7 +87,8 @@ def read_output_files():
         elif os.path.isdir(inp):
             for path,dir,file in os.walk(inp):
                 for file_name in file:
-                    if fnmatch.fnmatch(file_name, '*.out'):
+                    if fnmatch.fnmatch(file_name, '*'+args.extension):
+                        print(path+'/'+file_name)
                         file_list.append(path+'/'+file_name)
     return file_list
 
