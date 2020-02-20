@@ -1,12 +1,14 @@
 # Spectrum
 
-Script to read from the result file with the vertical excitation energies, and calculate the broadening for comparison of theoretical values with experimental UV/Vis data.
+Script to read from the result files with the vertical excitation energies, and calculate the broadening for comparison of theoretical values with experimental UV/Vis data.
 
 This script began with modifications of the [g09_spectrum.py](https://github.com/mdommett/compchem-scripts/blob/master/g09_spectrum.py) to work with ORCA as well, and thus began this project. The broadening gaussianis calculated following the [Gaussian instructions](http://gaussian.com/uvvisplot/).
 
 ## Usage
-The only required arguments are the calculation result files, which in the moment can be ORCA's "*.out" or Gaussian09's "*.log". The script identifies automatically whether it is a ORCA or Gaussian output file. The program can also be specified manually with the respective keyword.
+The only required arguments are the calculation result files, which in the moment can be ORCA's "*.out" or Gaussian09's "*.log". The script identifies automatically whether it is a ORCA or Gaussian output file. Different result files can be given simultaneously, returning a plot with one line per file.
+(spectrum&#46;py OUTPUT1 OUTPUT2 ...)
 
+The program can also be specified manually with the respective keyword.
 - prog: the supported options are "orca" and "gaussian".
 (spectrum&#46;py OUTPUT -prog orca|gaussian)
 
@@ -51,4 +53,4 @@ These options are used to save the spectrum in the preferred format. All options
 - Hability to save in different formats.
 
 #### Fixes
-- Dealing with multiple calculation output files.
+- Plotting spectra of multiple files with gnuplot and data files.

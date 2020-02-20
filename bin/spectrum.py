@@ -5,6 +5,8 @@ import math
 from sys import argv
 from os import system
 import argparse
+import matplotlib.pyplot as plt
+
 
 """
 Modification of the script g09_spectrum.py, that started this whole project, available at
@@ -118,7 +120,6 @@ def gnu_plot(xaxis,yaxis):
     return
 
 def mpl_plot(xaxis,yaxis):
-    import matplotlib.pyplot as plt
     colours=["red","blue","green","orange","black","cyan","magenta"]
     plt.scatter(x,sum,s=2,c=colours[n])
     plt.plot(x,sum,color=colours[n],label=f[:-4])
@@ -131,10 +132,6 @@ def mpl_plot(xaxis,yaxis):
         plt.xlim(min(args.rng),max(args.rng))
     plt.legend()
 
-    if args.save:
-        plt.savefig(args.save+".pdf")
-    if args.mpl:
-        plt.show()
     return
 
 if __name__=='__main__':
@@ -185,3 +182,8 @@ if __name__=='__main__':
 
         if args.mpl or args.save:
             mpl_plot(x,sum)
+    
+    if args.save:
+        plt.savefig(args.save+".pdf")
+    if args.mpl:
+        plt.show()
