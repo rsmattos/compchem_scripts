@@ -17,10 +17,10 @@ Script to extrat the energies from a scan calculation. \n \
 When passing the atom index, the first atom given is connected to the second, which is connected to the third, and so on. \n \
 Starting to count with the first atom in the coordinates list being 1.''')
 parser.add_argument('input',help="Output files or directories containing them.", type=str, nargs='*',default='.')
-parser.add_argument('-p','--path_file',help="File with a list of outputs to be read.", type=str, nargs=1)
-parser.add_argument('-e','--extension',help="Determine the type of extension to look for", type=str, nargs=1,default='.out')
+parser.add_argument('-p','--paths_file',help="File with a list of outputs to be read.", type=str)
+parser.add_argument('-e','--extension',help="Determine the type of extension to look for", type=str,default='.out')
 variation = parser.add_mutually_exclusive_group(required=True)
-variation.add_argument('-b','--bond_distance',help="Atom index to calculate the bond distanced.", type=int, nargs=2,metavar='ATOM')
+variation.add_argument('-b','--bond',help="Atom index to calculate the bond distanced.", type=int, nargs=2,metavar='ATOM')
 variation.add_argument('-a','--angle',help="Atom index to calculate the angle.", type=int, nargs=3,metavar='ATOM')
 variation.add_argument('-d','--dihedral',help="Atom index to calculate the dihedral angle.", type=int, nargs=4,metavar='ATOM')
 args=parser.parse_args()
@@ -72,13 +72,15 @@ def dihedral(p):
 
 ###################      READING FILES     ###################
 # read file with a list of paths to the calculation outputs
-def read_path_file():
+def read_paths_file():
     file_list=[]
 
-    outs=open(args.path_file[0],"r")
+    outs=open(args.paths_file,"r")
     line=outs.readlines()
 
+    print("The output files being used are:")
     for i in range(len(line)):
+        print(line[i].rstrip())
         file_list.append(line[i].rstrip())
 
     outs.close()
@@ -119,8 +121,8 @@ def read_energies(outputs):
         for j in range(len(line)):
             # reads the parameter being evaluated
             if "CARTESIAN COORDINATES (ANGSTROEM)" in line[j]:
-                if args.bond_distance:
-                    for k in args.bond_distance:
+                if args.bond:
+                    for k in args.bond:
                         p.append(np.array([float(line[j+1+k].split()[1]),
                                            float(line[j+1+k].split()[2]),
                                            float(line[j+1+k].split()[3])]))
@@ -171,7 +173,7 @@ def calc_energies_dic(state):
                 state[i][j]=state[i][j]+state[0][j]
     return state
 
-###################      OUTPUTING     ###################
+###################      OUTPUTTING     ###################
 def plot_matplot(state):
     import matplotlib.pyplot as plt
 
@@ -182,8 +184,8 @@ def plot_matplot(state):
 
 ###################      MAIN     ###################
 if __name__=='__main__':
-    if args.path_file:
-        outputs=read_path_file()
+    if args.paths_file:
+        outputs=read_paths_file()
     else:            
         outputs=read_output_files()
 
