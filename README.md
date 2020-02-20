@@ -1,6 +1,6 @@
 # Scripts for computational chemistry
 
-Here is presented a couple of scripts intended to facilitate the data treatment of computational chemsitry calculations. Some programs support results for different softwares, others are package specific. For more details, check each program's help.
+Here is presented a couple of scripts intended to facilitate the data treatment of computational chemsitry calculations. Some programs support results for different softwares, others are package specific. Each script is intended to be self contained, this may cause bits of code being repeated in different programs, but removes dependence among them. For more details, check each program's help.
 
 The available scripts are:
 - [scan](./doc/scan.md): Takes the vertical excitation energies of different geometries following a specific parameter (bond distance, angle, dihedral) or no parameter at all (like for a breathing mode). Currently support only for ORCA.
@@ -15,4 +15,4 @@ There is no need for instalation, just copy the script in any desired folder and
 
 ## Credits
 
-I'm a chemsitry student at UFRJ pursuing a Master's degree.
+I'm a chemsitry student at UFRJ pursuing a Master's degree. This project is intended to help me practice python, managind a repository and facilitate the lab work. Any tips and suggestions on what to add to the scripts are welcome.
