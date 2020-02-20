@@ -5,10 +5,9 @@ import math
 from sys import argv
 from os import system
 import argparse
-#########
-#########
+
 """
-Modification of the script g09_spectrum.py, available at
+Modification of the script g09_spectrum.py, that started this whole project, available at
 https://github.com/mdommett/compchem-scripts/blob/master/g09_spectrum.py
 
 This program plots a UV/Vis absorption spectrum from a Gaussian 09 output file or Orca. Guassian broadening is used
@@ -23,7 +22,7 @@ A number of options can be used to control the output:
 -sticks: plot excitation energies as a stick g09_spectrum
 -sd : set the standard deviation (in eV). Default is 0.4
 -save : save resultant specturm as pdf file
--raw : save the spectrum data as a text file
+-dat : save the spectrum data as a text file
 """
 parser = argparse.ArgumentParser()
 parser.add_argument("input",help="Log file of Gaussian 09 TD job", type=str, nargs='*')
@@ -33,9 +32,9 @@ parser.add_argument("-mpl",help="Plot a spectrum using matplotlib",action="store
 parser.add_argument("-sticks",help="Plot the stick spectrum",action="store_true")
 parser.add_argument("-sd",help="Standard deviation (in eV)",default=0.4,type=float)
 parser.add_argument("-rng",help="Min and max values for the spectrum (in nm)",nargs=2,type=int)
-parser.add_argument("-save",help="Save spectrum with matplotlib", type=str)
-parser.add_argument("-raw",help="Save raw data as a text file",default="data",type=str)
-parser.add_argument("-csv",help="Save raw data as a csv file",default="data",type=str)
+parser.add_argument("-save",help="Save spectrum with matplotlib",nargs='?',const="spectrum", type=str)
+parser.add_argument("-dat",help="Save data as a text file",nargs='?',const="spectrum",type=str)
+parser.add_argument("-csv",help="Save data as a csv file",nargs='?',const="spectrum",type=str)
 args=parser.parse_args()
 
 def find_program(line):
@@ -70,29 +69,28 @@ def read_orca(line):
                 os_strengths.append(float(line[j].split()[3]))
     return energies,os_strengths
 
-#def abs_max(f,lam,ref):
+#def abs_max(f,lamb_max,lamb):
 #    a=1.3062974e8
 #    b=f/(1e7/3099.6)
-#    c=np.exp(-(((1/ref-1/lam)/(1/(1240/args.sd)))**2))
+#    c=np.exp(-(((1/lamb-1/lamb_max)/(1/(1240/args.sd)))**2))
 #    return a*b*c
 
 def abs_max(f,lamb_max,lamb):
     # 1240 passes ards.sd from eV to nm-1
     return f*np.exp(-((1/lamb-1/lamb_max)*1240/args.sd)**2)
 
-def raw_data(xaxis,yaxis):
-    with open(args.raw+".dat","w") as d:
+def out_data(xaxis,yaxis):
+    with open(args.dat+".dat","w") as d:
         d.write("# index       Wavelenght  Oscilator_strenght\n")
         for i in range(len(xaxis)):
             d.write("{0:>7} {1:>16}   {2:>16}\n".format(i+1,xaxis[i],yaxis[i]))
         d.close()
 
 def out_csv(xaxis,yaxis):
-    with open(args.raw+".dat","w") as d:
+    with open(args.csv+".csv","w") as d:
         for i in range(len(xaxis)):
-            d.write("{0:>7},{1:>16},{2:>16}\n".format(i+1,xaxis[i],yaxis[i]))
+            d.write("{0},{1},{2}\n".format(i+1,xaxis[i],yaxis[i]))
         d.close()
-
 
 def gnu_plot(xaxis,yaxis):
     with open("data","w") as d:
@@ -174,9 +172,13 @@ if __name__=='__main__':
                 tot+=abs_max(os_strengths[i],energies[i],lamb)
             sum.append(tot)
 
-        # output formatss
-        if args.raw:
-            raw_data(x,sum)
+        # output formats
+
+        if args.dat:
+            out_data(x,sum)
+
+        if args.csv:
+            out_csv(x,sum)
 
         if args.gnu:
             gnu_plot(x,sum)
