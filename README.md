@@ -15,4 +15,4 @@ There is no need for instalation, just copy the script in any desired folder and
 
 ## Credits
 
-I'm a chemsitry student at UFRJ pursuing a Master's degree. This project is intended to help me practice python, managind a repository and facilitate the lab work. Any tips and suggestions on what to add to the scripts are welcome.
+I'm a chemsitry student at UFRJ pursuing a Master's degree. This project is intended to help me practice python, managing a repository and facilitate the lab work. Any tips and suggestions on what to add to the scripts are welcome.
