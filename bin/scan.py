@@ -20,11 +20,12 @@ parser.add_argument('input',help="Output files or directories containing them.",
 parser.add_argument('-p','--path_file',help="File with a list of outputs to be read.", type=str, nargs=1)
 parser.add_argument('-e','--extension',help="Determine the type of extension to look for", type=str, nargs=1,default='.out')
 variation = parser.add_mutually_exclusive_group(required=True)
-variation.add_argument('-b','--bond_distance',help="Atom index to calculate the bond distanced.", type=int, nargs=2)
-variation.add_argument('-a','--angle',help="Atom index to calculate the angle.", type=int, nargs=3)
-variation.add_argument('-d','--dihedral',help="Atom index to calculate the dihedral angle.", type=int, nargs=4)
+variation.add_argument('-b','--bond_distance',help="Atom index to calculate the bond distanced.", type=int, nargs=2,metavar='ATOM')
+variation.add_argument('-a','--angle',help="Atom index to calculate the angle.", type=int, nargs=3,metavar='ATOM')
+variation.add_argument('-d','--dihedral',help="Atom index to calculate the dihedral angle.", type=int, nargs=4,metavar='ATOM')
 args=parser.parse_args()
 
+###################      CALCULATE PARAMETER VARIATION     ###################
 def distance(p):
     return np.linalg.norm(p[0]-p[1])
 
@@ -32,6 +33,7 @@ def angle(p):
     x = p[0] - p[1]
     y = p[2] - p[1]
 
+    # Making unitary vectors from arbitrary ones
     xu = x/np.linalg.norm(x)
     yu = y/np.linalg.norm(y)
 
@@ -68,80 +70,117 @@ def dihedral(p):
     y = np.dot(np.cross(b1, v), w)
     return np.degrees(np.arctan2(y, x))
 
+###################      READING FILES     ###################
+# read file with a list of paths to the calculation outputs
 def read_path_file():
     file_list=[]
+
     outs=open(args.path_file[0],"r")
     line=outs.readlines()
+
     for i in range(len(line)):
         file_list.append(line[i].rstrip())
+
     outs.close()
+
     return file_list
 
+# searches in the folder or passed arguments and creates a list
+# of paths to the calculation outputs
 def read_output_files():
     file_list=[]
     print("The output files being used are:")
+
     for inp in args.input:
         if os.path.isfile(inp):
             file_list.append(inp)
 
         elif os.path.isdir(inp):
+            # if the path given is a directory, searches inside for output files
             for path,dir,file in os.walk(inp):
                 for file_name in file:
                     if fnmatch.fnmatch(file_name, '*'+args.extension):
                         print(path+'/'+file_name)
                         file_list.append(path+'/'+file_name)
+
     return file_list
 
+# read the calculation outputs in search for the parameter
+# variation and the energies
 def read_energies(outputs):
     energy = defaultdict(dict)
+
     for i in range(len(outputs)):
         p=[]
+
         file=open(outputs[i],"r")
         line=file.readlines()
+
         for j in range(len(line)):
+            # reads the parameter being evaluated
             if "CARTESIAN COORDINATES (ANGSTROEM)" in line[j]:
                 if args.bond_distance:
                     for k in args.bond_distance:
                         p.append(np.array([float(line[j+1+k].split()[1]),
                                            float(line[j+1+k].split()[2]),
                                            float(line[j+1+k].split()[3])]))
-                    variable=float(distance(p))
+                    parameter=float(distance(p))
 
                 elif args.angle:
                     for k in args.angle:
                         p.append(np.array([float(line[j+1+k].split()[1]),
                                            float(line[j+1+k].split()[2]),
                                            float(line[j+1+k].split()[3])]))
-                    variable=float(angle(p))
+                    parameter=float(angle(p))
 
                 elif args.dihedral:
                     for k in args.dihedral:
                         p.append(np.array([float(line[j+1+k].split()[1]),
                                            float(line[j+1+k].split()[2]),
                                            float(line[j+1+k].split()[3])]))
-                    variable=float(dihedral(p))
+                    parameter=float(dihedral(p))
 
+            # reads the ground state energy
             elif "Total Energy " in line[j]:
-                energy[0][variable] = float(line[j].split()[5])
+                energy[0][parameter] = float(line[j].split()[5])
+
+            # reads the excited states energies
             elif "STATE " in line[j]:
-                energy[int(line[j].split()[1].split(':')[0])][variable] = float(line[j].split()[5])
+                energy[int(line[j].split()[1].split(':')[0])][parameter] = float(line[j].split()[5])
 
         file.close()
     return energy
 
+###################      MANIPULATING DATA     ###################
+# the excited states energies are in relation to the ground state in
+# its own geometry, for the plot is necessary to find the lowest gound
+# state energy, set it to zero and calculate all energies in relation
+# to the lowest ground state
 def calc_energies_dic(state):
 
     minimal=state[0][min(state[0], key=state[0].get)]
 
+    # dislocates all geometris ground states
     for i in state[0]:
         state[0][i]=state[0][i]-minimal
 
+    # dislocates all excited state energies
     for i in state:
         if not i==0:
             for j in state[i]:
                 state[i][j]=state[i][j]+state[0][j]
     return state
 
+###################      OUTPUTING     ###################
+def plot_matplot(state):
+    import matplotlib.pyplot as plt
+
+    for i in state:
+        plt.plot(*zip(*sorted(state[i].items())))
+    plt.show()
+
+
+###################      MAIN     ###################
 if __name__=='__main__':
     if args.path_file:
         outputs=read_path_file()
@@ -156,8 +195,4 @@ if __name__=='__main__':
 
     state=calc_energies_dic(state)
 
-    import matplotlib.pyplot as plt
-
-    for i in state:
-        plt.plot(*zip(*sorted(state[i].items())))
-    plt.show()
+    plot_matplot(state)
