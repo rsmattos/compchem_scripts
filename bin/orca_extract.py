@@ -4,9 +4,9 @@ import argparse
 
 parser = argparse.ArgumentParser()
 parser.add_argument("input",help="Name of the Orca output file to be read.", type=str, nargs='*')
-parser.add_argument("-dat",help="Save data as text file.",default="data",type=str)
-parser.add_argument("-tex",help="Save data as latex formated table.",default="data",type=str)
-parser.add_argument("-csv",help="Save data as comma separated value.",default="data",type=str)
+parser.add_argument("-dat",help="Save data as text file.",nargs='?',const="data",type=str)
+parser.add_argument("-tex",help="Save data as latex formated table.",nargs='?',const="data",type=str)
+parser.add_argument("-csv",help="Save data as comma separated value.",nargs='?',const="data",type=str)
 args=parser.parse_args()
 
 def read_abs_spectra(line):
