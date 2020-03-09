@@ -127,7 +127,7 @@ def mpl_plot(xaxis,yaxis):
     plt.ylabel("Oscilator strenght")
     if args.sticks:
         for i in range(len(energies)):
-            plt.vlines(energies[i],0,os_strengths[i],color='g')
+            plt.vlines(energies[i],0,os_strengths[i],color=colours[n])
     if args.rng:
         plt.xlim(min(args.rng),max(args.rng))
     plt.legend()
