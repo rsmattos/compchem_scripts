@@ -50,7 +50,7 @@ def out_tex_table():
 def out_csv():
     with open(args.csv+".csv","w") as c:
         for i in range(len(energies_nm)):
-            c.write("{0:>4},{1:>6.1f},{2:>4.1f},{3:>.4f},{4:>.5f}\n:q".format(i+1,energies_cm[i],energies_nm[i],1239.84193/energies_nm[i],os_strengths[i]))
+            c.write("{0:>4},{1:>6.1f},{2:>4.1f},{3:>.4f},{4:>.5f}\n".format(i+1,energies_cm[i],energies_nm[i],1239.84193/energies_nm[i],os_strengths[i]))
         c.close()
 
 if __name__=='__main__':
