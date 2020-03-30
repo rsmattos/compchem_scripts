@@ -16,13 +16,15 @@ parser = argparse.ArgumentParser(description='''\
 Script to extrat the energies from a scan calculation. \n \
 When passing the atom index, the first atom given is connected to the second, which is connected to the third, and so on. \n \
 Starting to count with the first atom in the coordinates list being 1.''')
-parser.add_argument('input',help="Output files or directories containing them.", type=str, nargs='*',default='.')
-parser.add_argument('-p','--paths_file',help="File with a list of outputs to be read.", type=str)
-parser.add_argument('-e','--extension',help="Determine the type of extension to look for", type=str,default='.out')
+parser.add_argument('input',help="Output files or directories containing them.",type=str,nargs='*',default='.')
+parser.add_argument('-p','--paths_file',help="File with a list of outputs to be read.",type=str)
+parser.add_argument('-e','--extension',help="Determine the type of extension to look for",type=str,default='.out')
+parser.add_argument('-s','--save',help="Determine the output file format",type=str,nargs='?',const='pdf')
+parser.add_argument('-o','--output',help="Base name of the output file",type=str,nargs='?',default='scan')
 variation = parser.add_mutually_exclusive_group(required=True)
-variation.add_argument('-b','--bond',help="Atom index to calculate the bond distanced.", type=int, nargs=2,metavar='ATOM')
-variation.add_argument('-a','--angle',help="Atom index to calculate the angle.", type=int, nargs=3,metavar='ATOM')
-variation.add_argument('-d','--dihedral',help="Atom index to calculate the dihedral angle.", type=int, nargs=4,metavar='ATOM')
+variation.add_argument('-b','--bond',help="Atom index to calculate the bond distanced.",type=int,nargs=2,metavar='ATOM')
+variation.add_argument('-a','--angle',help="Atom index to calculate the angle.", type=int,nargs=3,metavar='ATOM')
+variation.add_argument('-d','--dihedral',help="Atom index to calculate the dihedral angle.",type=int,nargs=4,metavar='ATOM')
 args=parser.parse_args()
 
 ###################      CALCULATE PARAMETER VARIATION     ###################
@@ -116,42 +118,44 @@ def read_energies(outputs):
         p=[]
 
         file=open(outputs[i],"r")
-        line=file.readlines()
+        lines=file.readlines()
 
-        m = 1
+        state = 1
 
-        for j in range(len(line)):
+        for line in range(len(lines)):
             # reads the parameter being evaluated
-            if "CARTESIAN COORDINATES (ANGSTROEM)" in line[j]:
+            if "CARTESIAN COORDINATES (ANGSTROEM)" in lines[line]:
                 if args.bond:
-                    for k in args.bond:
-                        p.append(np.array([float(line[j+1+k].split()[1]),
-                                           float(line[j+1+k].split()[2]),
-                                           float(line[j+1+k].split()[3])]))
+                    for atom in args.bond:
+                        p.append(np.array([float(lines[line+1+atom].split()[1]),
+                                           float(lines[line+1+atom].split()[2]),
+                                           float(lines[line+1+atom].split()[3])]))
                     parameter=float(distance(p))
 
                 elif args.angle:
-                    for k in args.angle:
-                        p.append(np.array([float(line[j+1+k].split()[1]),
-                                           float(line[j+1+k].split()[2]),
-                                           float(line[j+1+k].split()[3])]))
+                    for atom in args.angle:
+                        p.append(np.array([float(lines[line+1+atom].split()[1]),
+                                           float(lines[line+1+atom].split()[2]),
+                                           float(lines[line+1+atom].split()[3])]))
                     parameter=float(angle(p))
 
                 elif args.dihedral:
-                    for k in args.dihedral:
-                        p.append(np.array([float(line[j+1+k].split()[1]),
-                                           float(line[j+1+k].split()[2]),
-                                           float(line[j+1+k].split()[3])]))
+                    for atom in args.dihedral:
+                        p.append(np.array([float(lines[line+1+atom].split()[1]),
+                                           float(lines[line+1+atom].split()[2]),
+                                           float(lines[line+1+atom].split()[3])]))
                     parameter=float(dihedral(p))
 
             # reads the ground state energy
-            elif "Total Energy " in line[j]:
-                energy[0][parameter] = float(line[j].split()[5])
+            elif "Total Energy " in lines[line]:
+                print(lines[line])
+                energy[0][parameter] = float(lines[line].split()[5])
 
             # reads the excited states energies
-            elif ( "STATE  "+str(m) ) in line[j]:
-                energy[m][parameter] = float(line[j].split()[5])
-                m += 1
+            elif ( "STATE"+str(state) ) in lines[line].replace(" ",""):
+                print(lines[line], state)
+                energy[state][parameter] = float(lines[line].split()[5])
+                state += 1
 
         file.close()
     return energy
@@ -180,8 +184,26 @@ def calc_energies_dic(state):
 def plot_matplot(state):
     import matplotlib.pyplot as plt
 
+    plt.style.use("seaborn")
+    plt.tight_layout()
+
+    if args.bond:
+        plt.xlabel("Distance (Angstron)")
+    elif args.angle:
+        plt.xlabel("Angle (Degree)")
+    elif args.dihedral:
+        plt.xlabel("Dihedral angle (Degree)")
+
+    plt.ylabel("Energy (eV)")
+    
     for i in state:
-        plt.plot(*zip(*sorted(state[i].items())))
+        plt.plot(*zip(*sorted(state[i].items())),label="State "+str(i))
+
+    plt.legend(loc='lower right')
+
+    if args.save:
+        plt.savefig(args.output+'.'+args.save)
+
     plt.show()
 
 
@@ -199,9 +221,7 @@ if __name__=='__main__':
     state=read_energies(outputs)
 
     print(state)
-
+    
     state=calc_energies_dic(state)
-
-    print(state)
 
     plot_matplot(state)
