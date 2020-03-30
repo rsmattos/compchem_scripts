@@ -118,6 +118,8 @@ def read_energies(outputs):
         file=open(outputs[i],"r")
         line=file.readlines()
 
+        m = 1
+
         for j in range(len(line)):
             # reads the parameter being evaluated
             if "CARTESIAN COORDINATES (ANGSTROEM)" in line[j]:
@@ -147,8 +149,9 @@ def read_energies(outputs):
                 energy[0][parameter] = float(line[j].split()[5])
 
             # reads the excited states energies
-            elif "STATE " in line[j]:
-                energy[int(line[j].split()[1].split(':')[0])][parameter] = float(line[j].split()[5])
+            elif ( "STATE  "+str(m) ) in line[j]:
+                energy[m][parameter] = float(line[j].split()[5])
+                m += 1
 
         file.close()
     return energy
@@ -195,6 +198,10 @@ if __name__=='__main__':
 
     state=read_energies(outputs)
 
+    print(state)
+
     state=calc_energies_dic(state)
+
+    print(state)
 
     plot_matplot(state)
