@@ -183,26 +183,50 @@ def calc_energies_dic(state):
 ###################      OUTPUTTING     ###################
 def plot_matplot(state):
     import matplotlib.pyplot as plt
+    from matplotlib.ticker import FormatStrFormatter
 
-    plt.style.use("seaborn")
-    plt.tight_layout()
+    plt.style.use("seaborn-deep")
+
+    fig , ax = plt.subplots()
+
+    # Axis ticks
+    ax.xaxis.set_tick_params(top=False, direction='out', width=1)
+    ax.xaxis.set_tick_params(bottom=True, direction='in', width=1)
+    ax.yaxis.set_tick_params(right=False, direction='in', width=1)
+    ax.yaxis.set_tick_params(bottom=True, direction='in', width=1)
+
+    plt.rc('font', family='sans-serif')
+    plt.tick_params(labelsize=10)
+
+    ax.yaxis.set_major_formatter(FormatStrFormatter("%.2f"))
+
+    # Axis labels
+    ax.set_ylabel(r"$\Delta$E (eV)", fontsize=10)
 
     if args.bond:
-        plt.xlabel("Distance (Angstron)")
+        ax.set_xlabel("Distance (Angstron)", fontsize=10)
     elif args.angle:
-        plt.xlabel("Angle (Degree)")
+        ax.set_xlabel("Angle (Degree)", fontsize=10)
     elif args.dihedral:
-        plt.xlabel("Dihedral angle (Degree)")
+        ax.set_xlabel("Dihedral angle (Degree)", fontsize=10)
 
-    plt.ylabel("Energy (eV)")
-    
+    # Image size
+    fig.set_size_inches(5.0, 5.0)
+
+    # Plotting
     for i in state:
-        plt.plot(*zip(*sorted(state[i].items())),label="State "+str(i))
+        ax.plot(*zip(*sorted(state[i].items())),label="S"+str(i),marker='o',markersize=3)
 
-    plt.legend(loc='lower right')
+    # Legend
+    columns=1
+    if i > 5:
+        columns=2
 
+    fig.legend(loc='upper right', ncol=columns, bbox_to_anchor=(0.9,0.45),fontsize='small')
+
+    # Saving
     if args.save:
-        plt.savefig(args.output+'.'+args.save)
+        fig.savefig(args.output+'.'+args.save)
 
     plt.show()
 
