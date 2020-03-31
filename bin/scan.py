@@ -21,6 +21,7 @@ parser.add_argument('-p','--paths_file',help="File with a list of outputs to be 
 parser.add_argument('-e','--extension',help="Determine the type of extension to look for",type=str,default='.out')
 parser.add_argument('-s','--save',help="Determine the output file format",type=str,nargs='?',const='pdf')
 parser.add_argument('-o','--output',help="Base name of the output file",type=str,nargs='?',default='scan')
+parser.add_argument('--noshow',help="Stop from plotting the graph in the screen",nargs='?',type=bool,const=True,default=False)
 variation = parser.add_mutually_exclusive_group(required=True)
 variation.add_argument('-b','--bond',help="Atom index to calculate the bond distanced.",type=int,nargs=2,metavar='ATOM')
 variation.add_argument('-a','--angle',help="Atom index to calculate the angle.", type=int,nargs=3,metavar='ATOM')
@@ -233,6 +234,8 @@ def plot_matplot(state):
             for key in diction:
                 print (key, " => ", diction[key])
 
+    if args.noshow:
+        return
 
     plt.show()
 
