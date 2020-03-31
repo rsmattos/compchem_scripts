@@ -108,7 +108,6 @@ def read_output_files():
                         print(path+'/'+file_name)
                         file_list.append(path+'/'+file_name)
 
-    print()
     return file_list
 
 # read the calculation outputs in search for the parameter
@@ -252,6 +251,7 @@ if __name__=='__main__':
         quit()
 
     state=read_energies(outputs)
+    print()
     
     state=calc_energies_dic(state)
 
