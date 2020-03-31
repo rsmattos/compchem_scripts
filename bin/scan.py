@@ -107,6 +107,7 @@ def read_output_files():
                         print(path+'/'+file_name)
                         file_list.append(path+'/'+file_name)
 
+    print()
     return file_list
 
 # read the calculation outputs in search for the parameter
@@ -148,12 +149,10 @@ def read_energies(outputs):
 
             # reads the ground state energy
             elif "Total Energy " in lines[line]:
-                print(lines[line])
                 energy[0][parameter] = float(lines[line].split()[5])
 
             # reads the excited states energies
             elif ( "STATE"+str(state) ) in lines[line].replace(" ",""):
-                print(lines[line], state)
                 energy[state][parameter] = float(lines[line].split()[5])
                 state += 1
 
@@ -223,10 +222,19 @@ def plot_matplot(state):
         columns=2
 
     fig.legend(loc='upper right', ncol=columns, bbox_to_anchor=(0.9,0.45),fontsize='small')
+    
 
     # Saving
     if args.save:
-        fig.savefig(args.output+'.'+args.save)
+        diction = plt.gcf().canvas.get_supported_filetypes()
+
+        if(args.save in diction):
+            fig.savefig(args.output+'.'+args.save)
+        else:
+            print("Graphic plot type not supported, the available formats are:")
+            for key in diction:
+                print (key, " => ", diction[key])
+
 
     plt.show()
 
@@ -243,8 +251,6 @@ if __name__=='__main__':
         quit()
 
     state=read_energies(outputs)
-
-    print(state)
     
     state=calc_energies_dic(state)
 
