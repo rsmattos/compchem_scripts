@@ -217,12 +217,10 @@ def plot_matplot(state):
         ax.plot(*zip(*sorted(state[i].items())),label="S"+str(i),marker='o',markersize=3)
 
     # Legend
-    columns=1
-    if i > 5:
-        columns=2
+    box = ax.get_position()
+    ax.set_position([box.x0 + box.width*0.05, box.y0 + box.height * 0.1, box.width, box.height * 0.95])
 
-    fig.legend(loc='upper right', ncol=columns, bbox_to_anchor=(0.9,0.45),fontsize='small')
-    
+    ax.legend(loc='upper center', bbox_to_anchor=(0.5, -0.1), fancybox=True, shadow=True, ncol=6, fontsize='small')
 
     # Saving
     if args.save:
