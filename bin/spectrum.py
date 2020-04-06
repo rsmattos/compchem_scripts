@@ -90,6 +90,7 @@ def out_data(xaxis,yaxis):
 
 def out_csv(xaxis,yaxis):
     with open(args.csv+".csv","w") as d:
+        d.write("index,Wavelenght,Oscilator_strenght\n")
         for i in range(len(xaxis)):
             d.write("{0},{1},{2}\n".format(i+1,xaxis[i],yaxis[i]))
         d.close()
