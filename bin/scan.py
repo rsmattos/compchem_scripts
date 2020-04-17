@@ -5,6 +5,7 @@ from collections import defaultdict
 import argparse
 import os
 import fnmatch
+import pandas as pd
 
 # TODO
 # include option to print output as dat
@@ -110,8 +111,7 @@ def read_output_files():
 
     return file_list
 
-# read the calculation outputs in search for the parameter
-# variation and the energies
+# read the energies as a dictionary and passes as a DataFrame
 def read_energies(outputs):
     energy = defaultdict(dict)
 
@@ -131,21 +131,21 @@ def read_energies(outputs):
                         p.append(np.array([float(lines[line+1+atom].split()[1]),
                                            float(lines[line+1+atom].split()[2]),
                                            float(lines[line+1+atom].split()[3])]))
-                    parameter=float(distance(p))
+                    parameter=round(float(distance(p)))
 
                 elif args.angle:
                     for atom in args.angle:
                         p.append(np.array([float(lines[line+1+atom].split()[1]),
                                            float(lines[line+1+atom].split()[2]),
                                            float(lines[line+1+atom].split()[3])]))
-                    parameter=float(angle(p))
+                    parameter=round(float(angle(p)))
 
                 elif args.dihedral:
                     for atom in args.dihedral:
                         p.append(np.array([float(lines[line+1+atom].split()[1]),
                                            float(lines[line+1+atom].split()[2]),
                                            float(lines[line+1+atom].split()[3])]))
-                    parameter=float(dihedral(p))
+                    parameter=round(float(dihedral(p)))
 
             # reads the ground state energy
             elif "Total Energy " in lines[line]:
@@ -157,27 +157,28 @@ def read_energies(outputs):
                 state += 1
 
         file.close()
-    return energy
+
+    return pd.DataFrame(energy)
 
 ###################      MANIPULATING DATA     ###################
 # the excited states energies are in relation to the ground state in
 # its own geometry, for the plot is necessary to find the lowest gound
 # state energy, set it to zero and calculate all energies in relation
 # to the lowest ground state
-def calc_energies_dic(state):
+def calc_energies_dic(energy):
+    # sort excitation energies, since orca gives it mixed
+    for i in energy.index:
+        energy.loc[i, :] = energy.loc[i, :].sort_values().tolist()
 
-    minimal=state[0][min(state[0], key=state[0].get)]
+    minimal = energy[0].min()
 
-    # dislocates all geometris ground states
-    for i in state[0]:
-        state[0][i]=state[0][i]-minimal
+    # dislocates all ground states energies
+    energy[0] = energy[0].subtract(minimal)
 
-    # dislocates all excited state energies
-    for i in state:
-        if not i==0:
-            for j in state[i]:
-                state[i][j]=state[i][j]+state[0][j]
-    return state
+    test = energy.add(energy[0], axis=0)
+    test[0] = energy[0]
+
+    return test.sort_index()
 
 ###################      OUTPUTTING     ###################
 def plot_matplot(state):
@@ -213,8 +214,8 @@ def plot_matplot(state):
     fig.set_size_inches(5.0, 5.0)
 
     # Plotting
-    for i in state:
-        ax.plot(*zip(*sorted(state[i].items())),label="S"+str(i),marker='o',markersize=3)
+    for S in state.columns:
+        ax.plot(state[S],label="S"+str(S),marker='o',markersize=3)
 
     # Legend
     box = ax.get_position()
@@ -250,9 +251,8 @@ if __name__=='__main__':
         print("No output files found.")
         quit()
 
-    state=read_energies(outputs)
-    print()
+    energy = read_energies( outputs )
     
-    state=calc_energies_dic(state)
+    energy = calc_energies_dic( energy )
 
-    plot_matplot(state)
+    plot_matplot( energy )
