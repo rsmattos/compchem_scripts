@@ -5,8 +5,6 @@ import math
 from sys import argv
 from os import system
 import argparse
-import matplotlib.pyplot as plt
-
 
 """
 Modification of the script g09_spectrum.py, that started this whole project, available at
@@ -28,7 +26,6 @@ A number of options can be used to control the output:
 """
 parser = argparse.ArgumentParser()
 parser.add_argument("input",help="Log file of Gaussian 09 TD job", type=str, nargs='*')
-parser.add_argument("-gnu",help="Plot a spectrum using gnuplot",action="store_true")
 parser.add_argument("-prog",help="Specify the quantum chem program used",type=str)
 parser.add_argument("-mpl",help="Plot a spectrum using matplotlib",action="store_true")
 parser.add_argument("-sticks",help="Plot the stick spectrum",action="store_true")
@@ -37,8 +34,10 @@ parser.add_argument("-rng",help="Min and max values for the spectrum (in nm)",na
 parser.add_argument("-save",help="Save spectrum with matplotlib",nargs='?',const="spectrum", type=str)
 parser.add_argument("-dat",help="Save data as a text file",nargs='?',const="spectrum",type=str)
 parser.add_argument("-csv",help="Save data as a csv file",nargs='?',const="spectrum",type=str)
+parser.add_argument("-dist", help="Choose the type of function to calculate the spectra", type=str)
 args=parser.parse_args()
 
+######################### READING OUTPUT FILES ########################
 def find_program(line):
     for i in range(5):
         if "Gaussian" in line[i]:
@@ -73,102 +72,115 @@ def read_orca(line):
             break
     return energies,os_strengths
 
-#def abs_max(f,lamb_max,lamb):
-#    a=1.3062974e8
-#    b=f/(1e7/3099.6)
-#    c=np.exp(-(((1/lamb-1/lamb_max)/(1/(1240/args.sd)))**2))
-#    return a*b*c
+def read_files(f):
+    # read output files
+    infile=open(f,"r")
+    lines=infile.readlines()
 
+    # find out the program that generated the output
+    if not args.prog:
+        args.prog = find_program(lines)
+
+    # read the energies and oscilator strenghts from output file
+    if args.prog=="orca":
+        energies, os_strengths=read_orca(lines)
+    elif args.prog=="gaussian":
+        energies, os_strengths=read_g09(lines)
+    else:
+        print("Program not supported.")
+        quit()
+
+    infile.close()
+    return energies, os_strengths
+#######################################################################
+
+######################### CALCULATE SPECTRA ###########################
 def abs_max(f,lamb_max,lamb):
-    # 1240 passes ards.sd from eV to nm-1
-    return f*np.exp(-((1/lamb-1/lamb_max)*1240/args.sd)**2)
+    # 1240 passes ards.sd from nm-1 to eV
+    return f*np.exp(-( (1/lamb-1/lamb_max)*1240/args.sd )**2)
 
+def abs_barbatti(f,lamb_max,lamb):
+    # 1240 passes ards.sd from nm-1 to eV
+    return f*np.exp(-(( (1/lamb - 1/lamb_max)*1240 + 0.1)/args.sd)**2)/args.sd
+
+def calculate_spectra(energies, os_strengths):
+    # set x axis
+    if args.rng:
+        x=np.linspace(max(args.rng),min(args.rng),1000)
+
+    else:
+        x=np.linspace(max(energies)+200,min(energies)-200,1000)
+
+    # calculate y axis
+    sum = np.zeros(len(x))
+    if args.dist == "barbatti":
+        for i in range(len(energies)):
+            sum += abs_barbatti(os_strengths[i],energies[i], x)
+
+        sum *= 0.619
+    else:
+        for i in range(len(energies)):
+            sum += abs_max(os_strengths[i],energies[i], x)
+
+    return x, sum
+#######################################################################
+
+############################## OUTPUTTING #############################
 def out_data(xaxis,yaxis):
-    with open(args.dat+".dat","w") as d:
+    with open(args.dat+str(n)+".dat","w") as d:
         d.write("# index       Wavelenght  Oscilator_strenght\n")
         for i in range(len(xaxis)):
             d.write("{0:>7} {1:>16}   {2:>16}\n".format(i+1,xaxis[i],yaxis[i]))
         d.close()
 
 def out_csv(xaxis,yaxis):
-    with open(args.csv+".csv","w") as d:
+    with open(args.csv+str(n)+".csv","w") as d:
         d.write("index,Wavelenght,Oscilator_strenght\n")
         for i in range(len(xaxis)):
             d.write("{0},{1},{2}\n".format(i+1,xaxis[i],yaxis[i]))
         d.close()
 
-def gnu_plot(xaxis,yaxis):
-    with open("data","w") as d:
-        for i in range(len(xaxis)):
-            d.write("{0} {1} {2}\n".format(i+1,xaxis[i],yaxis[i]))
-        d.close()
+def setup_plot():
+    import matplotlib.pyplot as plt
 
-    if args.sticks:
-        with open("excit","w") as e:
-            for i in range(len(energies)):
-                e.write("{0} {1} {2}\n".format(i+1,energies[i],os_strengths[i]))
-            e.close()
+    plt.style.use("seaborn-deep")
 
-    with open("plot","w") as p:
-        p.write("set xlabel \"Energy (nm)\"\nset ylabel \"Oscilator strenght\"\n")
-        p.write("plot 'data' using 2:3 title '' with lines lt 1 lw 2,\\\n")
-        if args.sticks:
-            p.write("     'excit' using 2:3 title '' with impulse lt 2 lw 2,\\\n")
-        p.close()
+    fig , ax = plt.subplots()
 
-    system("gnuplot -persist plot")
-    system("rm -f plot data")
-    if args.sticks:
-        system("rm -f excit")
-    return
+    plt.rc('font', family='sans-serif')
+    plt.tick_params(labelsize=10)
 
-def mpl_plot(xaxis,yaxis):
-    colours=["red","blue","green","orange","black","cyan","magenta"]
-    plt.scatter(x,sum,s=2,c=colours[n])
-    plt.plot(x,sum,color=colours[n],label=f[:-4])
-    plt.xlabel("Energy (nm)")
-    plt.ylabel("Oscilator strenght")
+    # Axis labels
+    ax.set_xlabel("Energy (nm)", fontsize=10)
+    ax.set_ylabel("Oscilator strenght", fontsize=10)
+
+    # Image size
+    fig.set_size_inches(5.0, 5.0)
+
+    return plt, fig, ax
+
+def mpl_plot(fig, ax, x, sum):
+    ax.plot(x,sum,label=f[:-4]+str(n))
+    
     if args.sticks:
         for i in range(len(energies)):
-            plt.vlines(energies[i],0,os_strengths[i],color=colours[n])
+            ax.vlines(energies[i],0,os_strengths[i])
     if args.rng:
-        plt.xlim(min(args.rng),max(args.rng))
-    plt.legend()
+        ax.xlim(min(args.rng),max(args.rng))
+    ax.legend()
 
     return
+#######################################################################
 
 if __name__=='__main__':
+    if args.mpl or args.save:
+        plt, fig, ax = setup_plot()
+
     for n,f in enumerate(args.input):
-        # read output files
-        infile=open(f,"r")
-        line=infile.readlines()
 
-        # find out the program that generated the output
-        if not args.prog:
-            args.prog = find_program(line)
+        energies, os_strengths = read_files(f)
 
-        # read the energies and oscilator strenghts from output file
-        if args.prog=="orca":
-            energies,os_strengths=read_orca(line)
-        elif args.prog=="gaussian":
-            energies,os_strengths=read_g09(line)
-        else:
-            print("Program not supported.")
-            quit()
-
-        infile.close()
-
-        # set x axis
-        if args.rng:
-            x=np.linspace(max(args.rng),min(args.rng),1000)
-
-        else:
-            x=np.linspace(max(energies)+200,min(energies)-200,1000)
-
-        # calculate y axis
-        sum = np.zeros(len(x))
-        for i in range(len(energies)):
-            sum += abs_max(os_strengths[i],energies[i], x)
+        x, sum = calculate_spectra(energies, os_strengths)
 
         # output formats
         if args.dat:
@@ -177,11 +189,8 @@ if __name__=='__main__':
         if args.csv:
             out_csv(x,sum)
 
-        if args.gnu:
-            gnu_plot(x,sum)
-
         if args.mpl or args.save:
-            mpl_plot(x,sum)
+            mpl_plot(fig, ax, x, sum)
     
     if args.save:
         plt.savefig(args.save+".pdf")
