@@ -42,11 +42,11 @@ args=parser.parse_args()
 def find_program(line):
     for i in range(5):
         if "Gaussian" in line[i]:
-            args.prog="gaussian"
-            return
+            return "gaussian"
+
         if "* O   R   C   A *" in line[i]:
-            args.prog="orca"
-            return
+            return "orca"
+
     print("Could not identify the program, try specifying with -prog.")
     quit()
 
@@ -67,8 +67,10 @@ def read_orca(line):
             nroots=int(line[i].split()[3])
         if " ABSORPTION SPECTRUM VIA TRANSITION ELECTRIC DIPOLE MOMENTS" in line[i]:
             for j in range(i+5,i+5+nroots):
-                energies.append(float(line[j].split()[2]))
-                os_strengths.append(float(line[j].split()[3]))
+                if float(line[j].split()[3]) > 10E-4:
+                    energies.append(float(line[j].split()[2]))
+                    os_strengths.append(float(line[j].split()[3]))
+            break
     return energies,os_strengths
 
 #def abs_max(f,lamb_max,lamb):
@@ -137,12 +139,13 @@ def mpl_plot(xaxis,yaxis):
 
 if __name__=='__main__':
     for n,f in enumerate(args.input):
+        # read output files
         infile=open(f,"r")
         line=infile.readlines()
 
         # find out the program that generated the output
         if not args.prog:
-            find_program(line)
+            args.prog = find_program(line)
 
         # read the energies and oscilator strenghts from output file
         if args.prog=="orca":
@@ -163,15 +166,11 @@ if __name__=='__main__':
             x=np.linspace(max(energies)+200,min(energies)-200,1000)
 
         # calculate y axis
-        sum=[]
-        for lamb in x:
-            tot=0
-            for i in range(len(energies)):
-                tot+=abs_max(os_strengths[i],energies[i],lamb)
-            sum.append(tot)
+        sum = np.zeros(len(x))
+        for i in range(len(energies)):
+            sum += abs_max(os_strengths[i],energies[i], x)
 
         # output formats
-
         if args.dat:
             out_data(x,sum)
 
