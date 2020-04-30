@@ -35,6 +35,7 @@ parser.add_argument("-save",help="Save spectrum with matplotlib",nargs='?',const
 parser.add_argument("-dat",help="Save data as a text file",nargs='?',const="spectrum",type=str)
 parser.add_argument("-csv",help="Save data as a csv file",nargs='?',const="spectrum",type=str)
 parser.add_argument("-dist", help="Choose the type of function to calculate the spectra", type=str)
+parser.add_argument("-shift", help="Adds red or blue shift to the spectra", default=0.0, type=float)
 args=parser.parse_args()
 
 ######################### READING OUTPUT FILES ########################
@@ -95,13 +96,9 @@ def read_files(f):
 #######################################################################
 
 ######################### CALCULATE SPECTRA ###########################
-def abs_max(f,lamb_max,lamb):
+def gaussian_dist(f,lamb_max,lamb):
     # 1240 passes ards.sd from nm-1 to eV
-    return f*np.exp(-( (1/lamb-1/lamb_max)*1240/args.sd )**2)
-
-def abs_barbatti(f,lamb_max,lamb):
-    # 1240 passes ards.sd from nm-1 to eV
-    return f*np.exp(-(( (1/lamb - 1/lamb_max)*1240 + 0.1)/args.sd)**2)/args.sd
+    return f*np.exp(-(( (1/lamb - 1/lamb_max)*1240 + args.shift)/args.sd)**2)
 
 def calculate_spectra(energies, os_strengths):
     # set x axis
@@ -113,14 +110,10 @@ def calculate_spectra(energies, os_strengths):
 
     # calculate y axis
     sum = np.zeros(len(x))
-    if args.dist == "barbatti":
-        for i in range(len(energies)):
-            sum += abs_barbatti(os_strengths[i],energies[i], x)
+    for i in range(len(energies)):
+        sum += gaussian_dist(os_strengths[i],energies[i], x)
 
-        sum *= 0.619
-    else:
-        for i in range(len(energies)):
-            sum += abs_max(os_strengths[i],energies[i], x)
+    sum *= 0.619/args.sd
 
     return x, sum
 #######################################################################
