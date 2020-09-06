@@ -27,6 +27,7 @@ variation = parser.add_mutually_exclusive_group(required=True)
 variation.add_argument('-b','--bond',help="Atom index to calculate the bond distanced.",type=int,nargs=2,metavar='ATOM')
 variation.add_argument('-a','--angle',help="Atom index to calculate the angle.", type=int,nargs=3,metavar='ATOM')
 variation.add_argument('-d','--dihedral',help="Atom index to calculate the dihedral angle.",type=int,nargs=4,metavar='ATOM')
+variation.add_argument('-g','--general', help="When the modification isn't symple", action='store_true')
 args=parser.parse_args()
 
 ###################      CALCULATE PARAMETER VARIATION     ###################
@@ -146,6 +147,9 @@ def read_energies(outputs):
                                            float(lines[line+1+atom].split()[2]),
                                            float(lines[line+1+atom].split()[3])]))
                     parameter=round(float(dihedral(p)))
+
+                elif args.general:
+                  	parameter=i+1
 
             # reads the ground state energy
             elif "Total Energy " in lines[line]:
