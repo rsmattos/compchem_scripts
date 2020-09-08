@@ -6,6 +6,8 @@ import argparse
 import os
 import fnmatch
 import pandas as pd
+import matplotlib.pyplot as plt
+from matplotlib.ticker import FormatStrFormatter
 
 # TODO
 # include option to print output as dat
@@ -18,7 +20,8 @@ Script to extrat the energies from a scan calculation. \n \
 When passing the atom index, the first atom given is connected to the second, which is connected to the third, and so on. \n \
 Starting to count with the first atom in the coordinates list being 1.''')
 parser.add_argument('input',help="Output files or directories containing them.",type=str,nargs='*',default='.')
-parser.add_argument('-p','--paths_file',help="File with a list of outputs to be read.",type=str)
+parser.add_argument('--noenergy', help="Doesn't print the energy scan", action='store_false')
+parser.add_argument('--descriptors', help="Print the TheoDORE descriptors", action='store_true')
 parser.add_argument('-e','--extension',help="Determine the type of extension to look for",type=str,default='.out')
 parser.add_argument('-s','--save',help="Determine the output file format",type=str,nargs='?',const='pdf')
 parser.add_argument('-o','--output',help="Base name of the output file",type=str,nargs='?',default='scan')
@@ -76,31 +79,16 @@ def dihedral(p):
     return np.degrees(np.arctan2(y, x))
 
 ###################      READING FILES     ###################
-# read file with a list of paths to the calculation outputs
-def read_paths_file():
-    file_list=[]
-
-    outs=open(args.paths_file,"r")
-    line=outs.readlines()
-
-    print("The output files being used are:")
-    for i in range(len(line)):
-        print(line[i].rstrip())
-        file_list.append(line[i].rstrip())
-
-    outs.close()
-
-    return file_list
-
 # searches in the folder or passed arguments and creates a list
 # of paths to the calculation outputs
-def read_output_files():
-    file_list=[]
+def find_output_files():
+    paths=[]
+    file=''
     print("The output files being used are:")
 
     for inp in args.input:
         if os.path.isfile(inp):
-            file_list.append(inp)
+            paths.append(inp)
 
         elif os.path.isdir(inp):
             # if the path given is a directory, searches inside for output files
@@ -108,18 +96,25 @@ def read_output_files():
                 for file_name in file:
                     if fnmatch.fnmatch(file_name, '*'+args.extension):
                         print(path+'/'+file_name)
-                        file_list.append(path+'/'+file_name)
+                        paths.append(path)
+                        file = '/'+file_name
 
-    return file_list
+    return paths, file
 
 # read the energies as a dictionary and passes as a DataFrame
-def read_energies(outputs):
+def read_files(paths, output):
     energy = defaultdict(dict)
 
-    for i in range(len(outputs)):
+    tden_summ = []
+
+    if args.descriptors:
+        tden_summ_header = pd.read_csv(paths[0]+'/'+'tden_summ.txt', sep='\s+', nrows=0).columns.tolist() 
+        tden_summ = pd.DataFrame(columns=tden_summ_header)
+
+    for i in range(len(paths)):
         p=[]
 
-        file=open(outputs[i],"r")
+        file=open(paths[i]+output,"r")
         lines=file.readlines()
 
         state = 1
@@ -162,7 +157,12 @@ def read_energies(outputs):
 
         file.close()
 
-    return pd.DataFrame(energy)
+        if args.descriptors:
+            tmp = pd.read_csv(paths[i]+'/'+'tden_summ.txt', sep='\s+', header=0, names=tden_summ_header, skiprows=2, nrows=1)
+            tmp['index'] = parameter
+            tden_summ = tden_summ.append(tmp, ignore_index=True)
+
+    return pd.DataFrame(energy), tden_summ.set_index('index')
 
 ###################      MANIPULATING DATA     ###################
 # the excited states energies are in relation to the ground state in
@@ -185,9 +185,7 @@ def calc_energies_dic(energy):
     return test.sort_index()
 
 ###################      OUTPUTTING     ###################
-def plot_matplot(state):
-    import matplotlib.pyplot as plt
-    from matplotlib.ticker import FormatStrFormatter
+def plot_energy(state):
 
     plt.style.use("seaborn-deep")
 
@@ -213,6 +211,8 @@ def plot_matplot(state):
         ax.set_xlabel("Angle (Degree)", fontsize=10)
     elif args.dihedral:
         ax.set_xlabel("Dihedral angle (Degree)", fontsize=10)
+    elif args.general:
+        ax.set_xlabel("Steps", fontsize=10)
 
     # Image size
     fig.set_size_inches(5.0, 5.0)
@@ -232,7 +232,7 @@ def plot_matplot(state):
         diction = plt.gcf().canvas.get_supported_filetypes()
 
         if(args.save in diction):
-            fig.savefig(args.output+'.'+args.save)
+            fig.savefig(args.output+'.energy.'+args.save)
         else:
             print("Graphic plot type not supported, the available formats are:")
             for key in diction:
@@ -243,20 +243,94 @@ def plot_matplot(state):
 
     plt.show()
 
+    return
+
+def plot_descriptors(tden_summ):
+
+    plt.style.use("seaborn-deep")
+
+    fig , axs = plt.subplots(2, 1)
+
+    # Axis ticks
+    axs[0].xaxis.set_tick_params(top=False, direction='out', width=1)
+    axs[0].xaxis.set_tick_params(bottom=True, direction='in', width=1)
+    axs[0].yaxis.set_tick_params(right=False, direction='in', width=1)
+    axs[0].yaxis.set_tick_params(bottom=True, direction='in', width=1)
+
+    plt.rc('font', family='sans-serif')
+    plt.tick_params(labelsize=10)
+
+    axs[0].yaxis.set_major_formatter(FormatStrFormatter("%.2f"))
+
+    # Axis labels
+#    axs[0].set_ylabel(r"$\Delta$E (eV)", fontsize=10)
+
+    if args.bond:
+        axs[0].set_xlabel("Distance (Angstron)", fontsize=10)
+    elif args.angle:
+        axs[0].set_xlabel("Angle (Degree)", fontsize=10)
+    elif args.dihedral:
+        axs[0].set_xlabel("Dihedral angle (Degree)", fontsize=10)
+    elif args.general:
+        axs[0].set_xlabel("Steps", fontsize=10)
+
+    # Image size
+    fig.set_size_inches(5.0, 5.0)
+
+    # Plotting
+    axs[1].plot(tden_summ['CT'],label='CT',marker='o',markersize=3)
+    axs[1].plot(tden_summ['f'],label='f',marker='o',markersize=3)
+    axs[0].plot(tden_summ['POS'],label='POS',marker='o',markersize=3)
+    axs[0].plot(tden_summ['PR'],label='PR',marker='o',markersize=3)
+    axs[0].plot(tden_summ['PRNTO'],label='$PR_{NTO}$',marker='o',markersize=3)
+
+    # Legend
+    box = axs[0].get_position()
+    axs[0].set_position([box.x0 + box.width*0.05, box.y0 + box.height * 0.1, box.width, box.height * 0.95])
+
+    axs[0].legend(loc='upper center', bbox_to_anchor=(0.5, -0.1), fancybox=True, shadow=True, ncol=3, fontsize='small')
+
+    box = axs[1].get_position()
+    axs[1].set_position([box.x0 + box.width*0.05, box.y0 + box.height * 0.1, box.width, box.height * 0.95])
+
+    axs[1].legend(loc='upper center', bbox_to_anchor=(0.5, -0.1), fancybox=True, shadow=True, ncol=2, fontsize='small')
+
+    # Saving
+    if args.save:
+        diction = plt.gcf().canvas.get_supported_filetypes()
+
+        if(args.save in diction):
+            fig.savefig(args.output+'.descriptors.'+args.save)
+        else:
+            print("Graphic plot type not supported, the available formats are:")
+            for key in diction:
+                print (key, " => ", diction[key])
+
+    if args.noshow:
+        return
+
+    plt.show()
+
+    return
 
 ###################      MAIN     ###################
 if __name__=='__main__':
-    if args.paths_file:
-        outputs=read_paths_file()
-    else:            
-        outputs=read_output_files()
+    paths, file =find_output_files()
 
-    if len(outputs)==0:
+    if len(paths)==0:
         print("No output files found.")
         quit()
 
-    energy = read_energies( outputs )
-    
-    energy = calc_energies_dic( energy )
+    energy, tden_summ = read_files( paths, file )
 
-    plot_matplot( energy )
+    if args.noenergy:
+        energy = calc_energies_dic( energy )
+
+        energy.to_csv('energy.csv')
+        
+        plot_energy( energy)
+
+    if args.descriptors:
+        tden_summ.to_csv('descriptors.csv')
+
+        plot_descriptors( tden_summ )
