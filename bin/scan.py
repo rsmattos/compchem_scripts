@@ -158,7 +158,7 @@ def read_files(paths, output):
         file.close()
 
         if args.descriptors:
-            tmp = pd.read_csv(paths[i]+'/'+'tden_summ.txt', sep='\s+', header=0, names=tden_summ_header, skiprows=2, nrows=1)
+            tmp = pd.read_csv(paths[i]+'/'+'tden_summ.txt', sep='\s+', header=0, names=tden_summ_header, skiprows=1, nrows=1)
             tmp['index'] = parameter
             tden_summ = tden_summ.append(tmp, ignore_index=True)
 
