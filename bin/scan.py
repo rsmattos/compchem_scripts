@@ -83,7 +83,7 @@ def dihedral(p):
 # of paths to the calculation outputs
 def find_output_files():
     paths=[]
-    file=''
+    output_file=''
     print("The output files being used are:")
 
     for inp in args.input:
@@ -97,9 +97,9 @@ def find_output_files():
                     if fnmatch.fnmatch(file_name, '*'+args.extension):
                         print(path+'/'+file_name)
                         paths.append(path)
-                        file = '/'+file_name
+                        output_file = '/'+file_name
 
-    return paths, file
+    return paths, output_file
 
 # read the energies as a dictionary and passes as a DataFrame
 def read_files(paths, output):

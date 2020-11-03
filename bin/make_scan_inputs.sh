@@ -12,4 +12,5 @@ do
     tail -n +3 DISPLACEMENT/CALC.c1.d$X/geom.xyz >> scan/step_0$X/unbv.inp
     cat DISPLACEMENT/CALC.c1.d$X/geom.xyz >> geom.trj.xyz 
     echo "*" >> scan/step_0$X/unbv.inp
+    echo "" >> scan/step_0$X/unbv.inp
 done
