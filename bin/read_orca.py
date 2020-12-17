@@ -1,23 +1,32 @@
 #! /usr/bin/env python3
 
+##############################################################################
+#  Reads the geometry and energies from the orca output, and outputs as a 
+#  Dataframe
+#  Input: enters the path and name of the files
+#  Output: Dataframe with energies, column header has the states, vertical
+#          index has the geometrica parameters
+##############################################################################
+
 import numpy as np
 import pandas as pd
 from collections import defaultdict
 from geometric_param import *
 
-def energy(args, paths, output):
+def energy(args, paths):
+    
     energy = defaultdict(dict)
 
-    tden_summ = []
+    charge_transfer = pd.DataFrame()
+    oscillator_str = pd.DataFrame()
 
-    if args.descriptors:
-        tden_summ_header = pd.read_csv(paths[0]+'/'+'tden_summ.txt', sep='\s+', nrows=0).columns.tolist() 
-        tden_summ = pd.DataFrame(columns=tden_summ_header)
+    if args.theodore:
+        tden_summ_header = pd.read_csv(paths[0][:-len(paths[0].split('/')[-1])]+'tden_summ.txt', sep='\s+', nrows=0).columns.tolist() 
 
     for i in range(len(paths)):
         p=[]
 
-        file=open(paths[i]+output,"r")
+        file=open(paths[i],"r")
         lines=file.readlines()
 
         state = 1
@@ -51,7 +60,7 @@ def energy(args, paths, output):
 
             # reads the ground state energy
             elif "Total Energy " in lines[line]:
-                energy[0][parameter] = float(lines[line].split()[5])
+                energy['GS'][parameter] = float(lines[line].split()[5])
 
             # reads the excited states energies
             elif ( "STATE"+str(state) ) in lines[line].replace(" ",""):
@@ -60,18 +69,10 @@ def energy(args, paths, output):
 
         file.close()
 
-        if args.descriptors:
-            tmp = pd.read_csv(paths[i]+'/'+'tden_summ.txt', sep='\s+', header=0, names=tden_summ_header, skiprows=1, nrows=1)
-            tmp['index'] = parameter
-            tden_summ = tden_summ.append(tmp, ignore_index=True)
+        if args.theodore:
+            tmp = pd.read_csv(paths[i][:-len(paths[i].split('/')[-1])]+'tden_summ.txt', sep='\s+', header=None, \
+                              names=tden_summ_header, index_col='state', skiprows=2)
+            oscillator_str[parameter] = tmp['f']
+            charge_transfer[parameter] = tmp['CT']
 
-    return pd.DataFrame(energy)
-
-    ###################      MAIN     ###################
-if __name__=='__main__':
-    paths=""
-    output="unbv.out"
-
-    #energy = energy(paths,output)
-
-    print(energy(paths,output))
+    return pd.DataFrame(energy), oscillator_str.transpose(), charge_transfer.transpose()
